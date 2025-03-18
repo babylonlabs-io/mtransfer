@@ -61,6 +61,7 @@ mtransferd start --file transfer.json --from my_key --batch-size 10000
 - `--from` (required) - The key name to sign transactions.
 - `--batch-size` (required) - Number of transactions per batch (default: 10000).
 - `--validate-only` - Run validation to check total coins to be transferred and recipient count without sending transactions.
+- `--start-index` - Start index of the transfer recipient list (default: 0)
 
 Example for validation:
 
