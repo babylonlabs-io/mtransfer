@@ -6,23 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
 )
-
-// runEWithClientCtx runs cmd with client context and returns an error.
-func runEWithClientCtx(
-	fRunWithCtx func(ctx client.Context, cmd *cobra.Command, args []string) error,
-) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		clientCtx, err := client.GetClientQueryContext(cmd)
-		if err != nil {
-			return err
-		}
-
-		return fRunWithCtx(clientCtx, cmd, args)
-	}
-}
 
 // getSubCommand returns the command if it finds, otherwise it returns nil
 func getSubCommand(cmd *cobra.Command, commandName string) *cobra.Command {
@@ -56,7 +41,6 @@ func makeDirectory(dir string) error {
 
 	return nil
 }
-
 
 // fileExists reports whether the named file or directory exists.
 // This function is taken from https://github.com/btcsuite/btcd

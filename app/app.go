@@ -56,13 +56,13 @@ func NewApp(
 	}, nil
 }
 
-func (a *App) Start(jsonFile, signerKey string, batchSize, startIndex int, validateOnly bool) error {
-	fromAddr := a.mustGetTxSigner(signerKey)
+func (a *App) Start(ctx types.Context) error {
+	fromAddr := a.mustGetTxSigner(ctx.ClientCtx.FromName)
 	logger := a.logger
 
 	logger.Info("Loading and validating the transfer data...")
 	// validate the data and build the tx outputs (address <> amount)
-	totalAmount, entries, err := types.LoadTransferData(jsonFile)
+	totalAmount, entries, err := ctx.LoadTransferData()
 	if err != nil {
 		return err
 	}
@@ -72,12 +72,12 @@ func (a *App) Start(jsonFile, signerKey string, batchSize, startIndex int, valid
 		zap.Int("Entries count", len(entries)),
 	)
 
-	if validateOnly {
+	if ctx.ValidateOnly {
 		return nil
 	}
 
-	for i := startIndex; i < len(entries); i += batchSize {
-		end := i + batchSize
+	for i := ctx.StartIndex; i < len(entries); i += ctx.BatchSize {
+		end := i + ctx.BatchSize
 		if end > len(entries) {
 			end = len(entries)
 		}

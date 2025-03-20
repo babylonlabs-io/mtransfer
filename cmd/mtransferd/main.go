@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -43,6 +44,9 @@ func main() {
 	cmd := NewRootCmd()
 	cmd.AddCommand(
 		daemon.CommandInit(),
+		daemon.CommandBuildTxs(),
+		daemon.CommandSignTxs(),
+		daemon.CommandBroadcastTxs(),
 		daemon.CommandStart(),
 		daemon.CommandKeys(),
 		version.NewVersionCommand(),
@@ -64,6 +68,7 @@ func persistClientCtx(ctx client.Context) func(cmd *cobra.Command, _ []string) e
 	return func(cmd *cobra.Command, _ []string) error {
 		encCfg := appparams.DefaultEncodingConfig()
 		std.RegisterInterfaces(encCfg.InterfaceRegistry)
+		banktypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 		ctx = ctx.
 			WithCodec(encCfg.Codec).

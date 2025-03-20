@@ -2,54 +2,50 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
-	"sort"
 
-	appparams "github.com/babylonlabs-io/babylon/app/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-func LoadTransferData(filename string) (sdk.Coins, []banktypes.Output, error) {
-	file, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, nil, err
+type Sender struct {
+	KeyName   string
+	Sequence  uint64
+	AccNumber uint64
+}
+
+func NewSender(keyName string, seq, accNum uint64) Sender {
+	return Sender{
+		KeyName:   keyName,
+		Sequence:  seq,
+		AccNumber: accNum,
+	}
+}
+
+type TxsJSON struct {
+	Txs []any `json:"txs"`
+}
+
+func NewTxsJSON(txs []sdk.Tx, ec sdk.TxEncoder) (*TxsJSON, error) {
+	if ec == nil {
+		return nil, errors.New("cannot print unsigned tx: tx json encoder is nil")
 	}
 
-	var rawData map[string]struct {
-		Aggregates struct {
-			TotalBaby float64 `json:"total_baby"`
-		} `json:"aggregates"`
-	}
-	if err := json.Unmarshal(file, &rawData); err != nil {
-		return nil, nil, err
-	}
-
-	// Convert map to slice
-	totalAmount := sdk.Coins{}
-	entries := make([]banktypes.Output, 0, len(rawData))
-	for address, data := range rawData {
-		// if amount is zero skip it
-		if data.Aggregates.TotalBaby == 0 {
-			continue
-		}
-		coins, err := sdk.ParseCoinsNormalized(fmt.Sprintf("%f%s", data.Aggregates.TotalBaby, appparams.HumanCoinUnit))
+	// Collect transactions as JSON objects
+	var txList []any
+	for _, tx := range txs {
+		jsonBytes, err := ec(tx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid amount for address %s: %w", address, err)
+			return nil, err
 		}
-		totalAmount = totalAmount.Add(coins...)
-		accAddr, err := sdk.AccAddressFromBech32(address)
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid address %s: %w", address, err)
+
+		var txData any
+		if err := json.Unmarshal(jsonBytes, &txData); err != nil {
+			return nil, fmt.Errorf("failed to decode transaction JSON: %w", err)
 		}
-		entries = append(entries, banktypes.NewOutput(accAddr, coins))
+
+		txList = append(txList, txData)
 	}
 
-	// Sort by address so the order is deterministic
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Address < entries[j].Address
-	})
-
-	return totalAmount, entries, nil
+	return &TxsJSON{Txs: txList}, nil
 }
