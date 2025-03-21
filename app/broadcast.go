@@ -31,7 +31,7 @@ func (a *App) BroadcastTxs(ctx types.Context, txs []sdk.Tx) error {
 		res, err := a.broadcastTx(txs[i], i)
 		if err != nil {
 			if strings.Contains(err.Error(), mempool.ErrTxInCache.Error()) {
-				logger.Info("Transaction already in mempool", zap.Int("Index", i))
+				logger.Info("Transaction already in mempool", zap.String("TxHash", res.TxHash), zap.Int("Index", i))
 				continue
 			}
 			logger.Error("Transaction failed", zap.Int("Index", i), zap.String("Error", err.Error()))
