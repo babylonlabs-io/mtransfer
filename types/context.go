@@ -178,10 +178,10 @@ func (ctx Context) WriteTxsJSONToOuput(txs []sdk.Tx) error {
 	if err != nil {
 		return err
 	}
-	return ctx.writeJSONToOutput(txsJSON)
+	return ctx.WriteJSONToOutput(txsJSON)
 }
 
-func (ctx Context) writeJSONToOutput(data any) error {
+func (ctx Context) WriteJSONToOutput(data any) error {
 	outputData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal transactions: %w", err)

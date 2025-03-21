@@ -50,6 +50,7 @@ func main() {
 		daemon.CommandStart(),
 		daemon.CommandKeys(),
 		version.NewVersionCommand(),
+		daemon.CmdRandomTransfers(),
 	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
