@@ -18,7 +18,7 @@ func CmdRandomTransfers() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "generate-random-txs",
 		Short: "generates random transfers input file with baby addr and smal values",
-		Args:  cobra.ExactArgs(2), // how many addr, coins for each addr
+		Args:  cobra.ExactArgs(2), // how many addr, float amount of baby
 		RunE:  types.RunEWithCtx(runGenerateRandomTxs),
 	}
 
