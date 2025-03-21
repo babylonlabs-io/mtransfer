@@ -38,7 +38,6 @@ Also, the sequence and account-number flags are not needed in offline mode.`,
 	cmd.Flags().String(types.OutputFileFlag, "unsigned_txs.json", "Name of the output file where the txs are dumped")
 	cmd.MarkFlagRequired(types.FileFlag)
 	cmd.MarkFlagRequired(flags.FlagFrom)
-	cmd.MarkFlagRequired(types.BatchSizeFlag)
 
 	flags.AddTxFlagsToCmd(cmd)
 
