@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	"go.uber.org/zap"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -60,6 +62,11 @@ func (a *App) Start(ctx types.Context) error {
 	fromAddr := a.mustGetTxSigner(ctx.ClientCtx.FromName)
 	logger := a.logger
 
+	gasPrices, err := sdk.ParseDecCoins(a.cfg.GasPrices)
+	if err != nil {
+		return fmt.Errorf("invalid gas prices: %v", err)
+	}
+
 	logger.Info("Loading and validating the transfer data...")
 	// validate the data and build the tx outputs (address <> amount)
 	totalAmount, entries, err := ctx.LoadTransferData()
@@ -76,6 +83,7 @@ func (a *App) Start(ctx types.Context) error {
 		return nil
 	}
 
+	totalFees := sdk.Coins{}
 	for i := ctx.StartIndex; i < len(entries); i += ctx.BatchSize {
 		end := i + ctx.BatchSize
 		if end > len(entries) {
@@ -88,7 +96,11 @@ func (a *App) Start(ctx types.Context) error {
 			batchTotal = batchTotal.Add(entry.Coins...)
 		}
 
-		var txIncluded bool
+		var (
+			txIncluded bool
+			txRes      *sdk.TxResponse
+		)
+
 		for !txIncluded {
 			input := banktypes.Input{Address: fromAddr, Coins: batchTotal}
 			msg := banktypes.NewMsgMultiSend(input, batch)
@@ -109,17 +121,19 @@ func (a *App) Start(ctx types.Context) error {
 			logger.Info("Transaction sent to mempool", zap.String("TxHash", res.TxHash), zap.Uint32("Code", res.Code))
 
 			// check tx was included in a block before sending the next one
-			txIncluded, err = a.isTxIncluded(res.TxHash)
+			txIncluded, txRes, err = a.isTxIncluded(res.TxHash)
 			if err != nil {
 				return err
 			}
 			if !txIncluded {
 				logger.Error("Transaction was not included. Resending...")
+				continue
 			}
+			totalFees = addFees(txRes, totalFees, gasPrices)
 		}
 	}
 
-	logger.Info("Transfer completed successfully")
+	logger.Info("Transfer completed successfully", zap.String("Total Fees Paid", totalFees.String()))
 	return nil
 }
 
@@ -142,25 +156,42 @@ func (a *App) mustGetTxSigner(key string) string {
 }
 
 // isTxIncluded retries querying the latest block until it succeeds or context is canceled.
-func (a *App) isTxIncluded(txHash string) (bool, error) {
+func (a *App) isTxIncluded(txHash string) (bool, *sdk.TxResponse, error) {
 	logger := a.logger
 	waitTime := 35 * time.Second
 	hashBz, err := hex.DecodeString(txHash)
 	if err != nil {
 		logger.Error("invalid tx hash", zap.String("Hash", txHash))
-		return false, err
+		return false, nil, err
 	}
 
 	res, err := a.client.Provider().WaitForBlockInclusion(context.Background(), hashBz, waitTime)
 	if err != nil {
-		return false, err
+		return false, res, err
+	}
+
+	if res == nil {
+		return false, res, errors.New("transaction response is empty")
 	}
 
 	// successful code is == 0
 	if res.Code != 0 {
 		logger.Warn("Error in tx execution", zap.String("TxHash", txHash), zap.Uint32("Code", res.Code))
-		return false, nil
+		return false, res, nil
 	}
 	logger.Info("Tx included in block", zap.Int64("Height", res.Height), zap.Int64("Gas Used", res.GasUsed))
-	return true, nil
+	return true, res, nil
+}
+
+func addFees(txRes *sdk.TxResponse, totalFees sdk.Coins, gasPrices sdk.DecCoins) sdk.Coins {
+	if txRes == nil {
+		return totalFees
+	}
+	fees := make(sdk.Coins, len(gasPrices))
+	glDec := math.LegacyNewDec(txRes.GasWanted)
+	for i, gp := range gasPrices {
+		fee := gp.Amount.Mul(glDec)
+		fees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
+	}
+	return totalFees.Add(fees...)
 }

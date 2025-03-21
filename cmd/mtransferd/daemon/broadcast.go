@@ -64,7 +64,6 @@ func runBroadcastTxsCmd(ctx types.Context, cmd *cobra.Command, _ []string) error
 			return
 		}
 
-		logger.Info("Done broadcasting the transactions")
 	}()
 
 	select {

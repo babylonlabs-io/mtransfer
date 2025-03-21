@@ -22,8 +22,9 @@ var retryableErrors = []string{
 
 func (a *App) BroadcastTxs(ctx types.Context, txs []sdk.Tx) error {
 	var (
-		logger  = a.logger
-		txCount = len(txs)
+		logger    = a.logger
+		txCount   = len(txs)
+		totalFees = sdk.Coins{}
 	)
 
 	logger.Info("Broadcasting transactions...")
@@ -40,7 +41,7 @@ func (a *App) BroadcastTxs(ctx types.Context, txs []sdk.Tx) error {
 
 		logger.Info("Transaction sent to mempool", zap.String("TxHash", res.TxHash), zap.Uint32("Code", res.Code), zap.Int("Index", i))
 
-		txIncluded, err := a.isTxIncluded(res.TxHash)
+		txIncluded, _, err := a.isTxIncluded(res.TxHash)
 		if err != nil {
 			return err
 		}
@@ -48,7 +49,10 @@ func (a *App) BroadcastTxs(ctx types.Context, txs []sdk.Tx) error {
 			logger.Error("Transaction was not included", zap.Int("Index", i))
 			return errors.New("transaction not included in block")
 		}
+		totalFees = addTxFees(txs[i], totalFees)
 	}
+
+	logger.Info("Done broadcasting the transactions", zap.String("Total Fees Paid", totalFees.String()))
 
 	return nil
 }
@@ -132,4 +136,12 @@ func isRetryableError(err error) bool {
 		}
 	}
 	return false
+}
+
+func addTxFees(tx sdk.Tx, totalFees sdk.Coins) sdk.Coins {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return totalFees
+	}
+	return totalFees.Add(feeTx.GetFee()...)
 }
