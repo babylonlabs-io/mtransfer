@@ -30,9 +30,5 @@ dist/
 
 *.swp
 test.json
-
-# Output files
 merged.json
 aggregate.sh
-signed_txs.json
-unsigned_txs.json
