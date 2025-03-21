@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/babylonlabs-io/mtransfer/types"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +18,14 @@ func CommandInit() *cobra.Command {
 		Long:    `Creates a new mtransfer home directory`,
 		Example: `mtransferd init --home /home/user/.mtransfer`,
 		Args:    cobra.NoArgs,
-		RunE:    runEWithClientCtx(runInitCmd),
+		RunE:    types.RunEWithCtx(runInitCmd),
 	}
 
 	return cmd
 }
 
-func runInitCmd(ctx client.Context, cmd *cobra.Command, _ []string) error {
-	homePath, err := filepath.Abs(ctx.HomeDir)
+func runInitCmd(ctx types.Context, cmd *cobra.Command, _ []string) error {
+	homePath, err := filepath.Abs(ctx.ClientCtx.HomeDir)
 	if err != nil {
 		return err
 	}

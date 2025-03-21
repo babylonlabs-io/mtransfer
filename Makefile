@@ -23,10 +23,14 @@ BUILD_FLAGS := --tags "$(build_tags)" --ldflags '$(ldflags)'
 
 all: build install
 
-build: BUILD_ARGS := $(build_args) -o $(BUILDDIR)
+build: clean_build $(BUILDDIR)/
+	CGO_CFLAGS="-O -D__BLST_PORTABLE__" go build -mod=readonly $(BUILD_FLAGS) $(build_args) -o $(BUILDDIR) ./...
 
-$(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	CGO_CFLAGS="-O -D__BLST_PORTABLE__" go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./...
+install: go.sum $(BUILDDIR)/
+	CGO_CFLAGS="-O -D__BLST_PORTABLE__" go install -mod=readonly $(BUILD_FLAGS) $(build_args) ./...
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
+
+clean_build:
+	rm -rf $(BUILDDIR)

@@ -62,5 +62,10 @@ func ConfigWithFlags(ctx client.Context, homePath string, flagSet *pflag.FlagSet
 		cfg.GasAdjustment = gasAdj
 	}
 
+	if flagSet.Changed(flags.FlagGasPrices) {
+		gasPrices, _ := flagSet.GetString(flags.FlagGasPrices)
+		cfg.GasPrices = gasPrices
+	}
+
 	return cfg, nil
 }
