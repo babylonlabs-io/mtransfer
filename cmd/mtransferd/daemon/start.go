@@ -34,7 +34,6 @@ the total coins to be transferred and the recipients count using the --validate-
 	cmd.Flags().Int(types.StartIndexFlag, 0, "Start index of the transfer recipient list")
 	cmd.Flags().Bool(types.ValidateFlag, false, "Run only transfer file validation and get the total coins to be transferred and recipient count")
 	cmd.MarkFlagRequired(types.FileFlag)
-	cmd.MarkFlagRequired(types.BatchSizeFlag)
 
 	flags.AddTxFlagsToCmd(cmd)
 
