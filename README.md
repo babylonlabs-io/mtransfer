@@ -58,6 +58,9 @@ The `start` command automates the entire fund transfer process, including **tran
 mtransferd start --file transfer.json --from my_key --batch-size 10000
 ```
 
+**NOTE:** For reference about the expected file with the transfer recipients information,
+check out the `example_transfer.json` file on the root of this repo.
+
 #### Flags:
 
 - `--file` (**required**) - Path to the JSON file containing recipient details.

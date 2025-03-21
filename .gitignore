@@ -29,6 +29,10 @@ build/
 dist/
 
 *.swp
+
+# Output files
 test.json
 merged.json
 aggregate.sh
+signed_txs.json
+unsigned_txs.json
